@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gotd/td/tgerr"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
@@ -16,9 +17,11 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-func run(ctx context.Context) error {
+func run(ctx context.Context) (err error) {
 	logger, _ := zap.NewDevelopment()
-	defer logger.Sync()
+	defer func() {
+		multierr.AppendInto(&err, logger.Sync())
+	}()
 
 	trollDomain := os.Getenv("TROLL")
 	if trollDomain == "" {
