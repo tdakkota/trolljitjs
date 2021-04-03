@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 
+	"github.com/joho/godotenv"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
@@ -22,6 +23,10 @@ func run(ctx context.Context) (err error) {
 	defer func() {
 		multierr.AppendInto(&err, logger.Sync())
 	}()
+
+	if err := godotenv.Load(); err != nil {
+		logger.Info("Load environment file failed", zap.Error(err))
+	}
 
 	trollDomain := os.Getenv("TROLL")
 	if trollDomain == "" {
