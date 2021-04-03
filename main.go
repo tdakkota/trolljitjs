@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"strconv"
 
-	"github.com/gotd/td/tgerr"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
+	"github.com/gotd/td/tgerr"
 )
 
 func run(ctx context.Context) (err error) {

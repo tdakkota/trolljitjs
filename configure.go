@@ -8,10 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gotd/td/telegram/dcs"
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/dcs"
 )
 
 func codeAsk(ctx context.Context) (string, error) {
