@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram/message"
@@ -90,6 +91,8 @@ func (t *Troll) getSticker(ctx context.Context) error {
 	t.stickerMux.Lock()
 	t.sticker = sticker
 	t.stickerMux.Unlock()
+
+	t.logger.Info("Got sticker set", zap.String("stickerset", t.stickerSet))
 	return nil
 }
 
@@ -103,10 +106,12 @@ func (t *Troll) getUser(ctx context.Context) error {
 	if !ok {
 		return xerrors.Errorf("unexpected type %T", p)
 	}
+
 	t.resolvedMux.Lock()
 	t.resolved = userPeer
 	t.resolvedMux.Unlock()
 
+	t.logger.Info("Got user", zap.String("user", t.domain))
 	return nil
 }
 
@@ -122,11 +127,8 @@ func (t *Troll) setup(ctx context.Context) error {
 	return nil
 }
 
-func (t *Troll) Run(ctx context.Context) error {
-	if err := t.setup(ctx); err != nil {
-		return xerrors.Errorf("setup: %w", err)
-	}
-
+func (t *Troll) statusLoop(ctx context.Context) error {
+	t.logger.Info("Run update status loop")
 	ticker := time.NewTicker(2 * time.Minute)
 	for {
 		select {
@@ -139,4 +141,24 @@ func (t *Troll) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (t *Troll) Run(ctx context.Context) error {
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		if err := t.setup(ctx); err != nil {
+			return xerrors.Errorf("setup: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		if err := t.statusLoop(ctx); err != nil {
+			return xerrors.Errorf("status loop: %w", err)
+		}
+		return nil
+	})
+
+	return g.Wait()
 }

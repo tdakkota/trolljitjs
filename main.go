@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram"
@@ -18,14 +19,40 @@ import (
 	"github.com/gotd/td/tgerr"
 )
 
+func getLogLevel(or zapcore.Level) (zapcore.Level, error) {
+	l, ok := os.LookupEnv("LOG_LEVEL")
+	if !ok {
+		return or, nil
+	}
+
+	var loglevel zapcore.Level
+	if err := loglevel.UnmarshalText([]byte(l)); err == nil {
+		return loglevel, nil
+	}
+
+	level, err := strconv.Atoi(l)
+	if err != nil {
+		return 0, err
+	}
+
+	return zapcore.Level(level), nil
+}
+
 func run(ctx context.Context) (err error) {
-	logger, _ := zap.NewDevelopment()
+	envErr := godotenv.Load()
+
+	level, err := getLogLevel(zapcore.DebugLevel)
+	if err != nil {
+		return xerrors.Errorf("get log level: %w", err)
+	}
+
+	logger, _ := zap.NewDevelopment(zap.IncreaseLevel(level))
 	defer func() {
 		multierr.AppendInto(&err, logger.Sync())
 	}()
 
-	if err := godotenv.Load(); err != nil {
-		logger.Info("Load environment file failed", zap.Error(err))
+	if envErr != nil {
+		logger.Info("Load environment file failed", zap.Error(envErr))
 	}
 
 	trollDomain := os.Getenv("TROLL")

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -44,6 +45,8 @@ func (t *Troll) OnNewMessage(ctx context.Context, e tg.Entities, update *tg.Upda
 }
 
 func (t *Troll) ignored(ctx context.Context, resolved tg.InputPeerUser, msgID int, sticker tg.Document) error {
+	t.logger.Info("Answer sticker", zap.Int("msg_id", msgID))
+
 	_, err := t.sender.To(&resolved).
 		Reply(msgID).
 		Document(ctx, sticker.AsInputDocumentFileLocation())
@@ -51,6 +54,7 @@ func (t *Troll) ignored(ctx context.Context, resolved tg.InputPeerUser, msgID in
 }
 
 func (t *Troll) revoke(ctx context.Context, resolved tg.InputPeerUser, msgID int) error {
+	t.logger.Info("Delete message", zap.Int("msg_id", msgID))
 	self := t.sender.Self()
 
 	_, err := self.ForwardIDs(&resolved, msgID).Send(ctx)
@@ -68,5 +72,6 @@ func (t *Troll) OnUserStatus(ctx context.Context, e tg.Entities, update *tg.Upda
 		return nil
 	}
 
+	t.logger.Info("Got user status update", zap.String("status", fmt.Sprintf("%T", update.Status)))
 	return t.sender.To(&resolved).TypingAction().Typing(ctx)
 }
