@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"sync"
 	"time"
 
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
@@ -14,20 +14,25 @@ import (
 )
 
 type Troll struct {
-	domain     string
-	resolvedID atomic.Int64
+	domain, stickerSet string
+
+	resolved    *tg.InputPeerUser
+	resolvedMux sync.RWMutex
+	sticker     *tg.Document
+	stickerMux  sync.RWMutex
 
 	raw    *tg.Client
 	sender *message.Sender
 	logger *zap.Logger
 }
 
-func NewTroll(domain string, raw *tg.Client) *Troll {
+func NewTroll(domain, stickerSet string, raw *tg.Client) *Troll {
 	return &Troll{
-		domain: domain,
-		raw:    raw,
-		sender: message.NewSender(raw),
-		logger: zap.NewNop(),
+		domain:     domain,
+		stickerSet: stickerSet,
+		raw:        raw,
+		sender:     message.NewSender(raw),
+		logger:     zap.NewNop(),
 	}
 }
 
@@ -37,26 +42,58 @@ func (t *Troll) WithLogger(logger *zap.Logger) *Troll {
 	return t
 }
 
-func (t *Troll) OnNewMessage(ctx context.Context, e tg.Entities, update *tg.UpdateNewMessage) error {
-	msg, ok := update.Message.(*tg.Message)
-	if !ok || msg.Out {
-		return nil
+func (t *Troll) checkUserID(id int) (tg.InputPeerUser, bool) {
+	t.resolvedMux.RLock()
+	if t.resolved == nil {
+		t.resolvedMux.RUnlock()
+		return tg.InputPeerUser{}, false
+	}
+	resolved := *t.resolved
+	t.resolvedMux.RUnlock()
+
+	if resolved.UserID != id {
+		return tg.InputPeerUser{}, false
 	}
 
-	u, ok := msg.GetPeerID().(*tg.PeerUser)
-	if !ok || u.UserID != int(t.resolvedID.Load()) {
-		return nil
-	}
-
-	t.logger.Info("Got message",
-		zap.String("text", msg.Message),
-		zap.Time("date", time.Unix(int64(msg.Date), 0)),
-	)
-	_, err := t.sender.Self().Revoke().Messages(ctx, msg.ID)
-	return err
+	return resolved, true
 }
 
-func (t *Troll) Run(ctx context.Context) error {
+func (t *Troll) checkSticker() (tg.Document, bool) {
+	t.stickerMux.RLock()
+	if t.sticker == nil {
+		t.stickerMux.RUnlock()
+		return tg.Document{}, false
+	}
+	sticker := *t.sticker
+	t.stickerMux.RUnlock()
+
+	return sticker, true
+}
+
+func (t *Troll) getSticker(ctx context.Context) error {
+	set, err := t.raw.MessagesGetStickerSet(ctx, &tg.InputStickerSetShortName{
+		ShortName: t.stickerSet,
+	})
+	if err != nil {
+		return xerrors.Errorf("get sticker set %q", t.stickerSet)
+	}
+
+	if len(set.Documents) < 1 {
+		return xerrors.Errorf("sticker set is empty %v", set)
+	}
+
+	sticker, ok := set.Documents[len(set.Documents)-1].AsNotEmpty()
+	if !ok {
+		return xerrors.Errorf("last sticker is empty document %v", set)
+	}
+
+	t.stickerMux.Lock()
+	t.sticker = sticker
+	t.stickerMux.Unlock()
+	return nil
+}
+
+func (t *Troll) getUser(ctx context.Context) error {
 	p, err := t.sender.Resolve(t.domain, peer.OnlyUser).AsInputPeer(ctx)
 	if err != nil {
 		return xerrors.Errorf("resolve %q: %w", t.domain, err)
@@ -66,7 +103,29 @@ func (t *Troll) Run(ctx context.Context) error {
 	if !ok {
 		return xerrors.Errorf("unexpected type %T", p)
 	}
-	t.resolvedID.Store(int64(userPeer.UserID))
+	t.resolvedMux.Lock()
+	t.resolved = userPeer
+	t.resolvedMux.Unlock()
+
+	return nil
+}
+
+func (t *Troll) setup(ctx context.Context) error {
+	if err := t.getUser(ctx); err != nil {
+		return xerrors.Errorf("get user: %w", err)
+	}
+
+	if err := t.getSticker(ctx); err != nil {
+		t.logger.Warn("Get sticker failed", zap.Error(err))
+	}
+
+	return nil
+}
+
+func (t *Troll) Run(ctx context.Context) error {
+	if err := t.setup(ctx); err != nil {
+		return xerrors.Errorf("setup: %w", err)
+	}
 
 	ticker := time.NewTicker(2 * time.Minute)
 	for {

@@ -32,6 +32,10 @@ func run(ctx context.Context) (err error) {
 	if trollDomain == "" {
 		return xerrors.Errorf("empty TROLL env variable: %q", trollDomain)
 	}
+	stickerSet := os.Getenv("STICKER_SET")
+	if stickerSet == "" {
+		stickerSet = "wtfakkota"
+	}
 	_, test := os.LookupEnv("TEST")
 
 	dispatcher := tg.NewUpdateDispatcher()
@@ -44,9 +48,9 @@ func run(ctx context.Context) (err error) {
 	}
 
 	raw := tg.NewClient(waitInvoker{client})
-	troll := NewTroll(trollDomain, raw).
+	troll := NewTroll(trollDomain, stickerSet, raw).
 		WithLogger(logger.Named("troll"))
-	dispatcher.OnNewMessage(troll.OnNewMessage)
+	troll.Register(dispatcher)
 	return client.Run(ctx, func(ctx context.Context) error {
 		if err := client.AuthIfNecessary(ctx, telegram.NewAuth(flow, telegram.SendCodeOptions{})); err != nil {
 			return xerrors.Errorf("auth flow: %w", err)
