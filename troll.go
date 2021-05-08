@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/time/rate"
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram/message"
@@ -25,6 +26,8 @@ type Troll struct {
 	raw    *tg.Client
 	sender *message.Sender
 	logger *zap.Logger
+
+	limiter *rate.Limiter
 }
 
 func NewTroll(domain, stickerSet string, raw *tg.Client) *Troll {
@@ -34,6 +37,7 @@ func NewTroll(domain, stickerSet string, raw *tg.Client) *Troll {
 		raw:        raw,
 		sender:     message.NewSender(raw),
 		logger:     zap.NewNop(),
+		limiter:    rate.NewLimiter(rate.Every(15*time.Second), 1),
 	}
 }
 
@@ -153,12 +157,13 @@ func (t *Troll) Run(ctx context.Context) error {
 		return nil
 	})
 
-	g.Go(func() error {
-		if err := t.statusLoop(ctx); err != nil {
-			return xerrors.Errorf("status loop: %w", err)
-		}
-		return nil
-	})
+	//g.Go(func() error {
+	//	if err := t.statusLoop(ctx); err != nil {
+	//		return xerrors.Errorf("status loop: %w", err)
+	//	}
+	//	return nil
+	//})
 
+	<-ctx.Done()
 	return g.Wait()
 }

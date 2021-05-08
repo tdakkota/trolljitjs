@@ -47,7 +47,11 @@ func run(ctx context.Context) (err error) {
 		return xerrors.Errorf("get log level: %w", err)
 	}
 
-	logger, _ := zap.NewDevelopment(zap.IncreaseLevel(level))
+	cfg := zap.NewDevelopmentConfig()
+	cfg.OutputPaths = []string{
+		"trolljitrs.log",
+	}
+	logger, _ := cfg.Build(zap.IncreaseLevel(level))
 	defer func() {
 		multierr.AppendInto(&err, logger.Sync())
 	}()
