@@ -11,10 +11,12 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/dcs"
+	"github.com/gotd/td/tg"
 )
 
-func codeAsk(ctx context.Context) (string, error) {
+func codeAsk(context.Context, *tg.AuthSentCode) (string, error) {
 	fmt.Print("code:")
 	code, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
@@ -24,16 +26,16 @@ func codeAsk(ctx context.Context) (string, error) {
 	return code, nil
 }
 
-func configure(test bool, opts telegram.Options) (*telegram.Client, telegram.UserAuthenticator, error) {
+func configure(test bool, opts telegram.Options) (*telegram.Client, auth.UserAuthenticator, error) {
 	if test {
 		opts, err := telegram.OptionsFromEnvironment(opts)
 		if err != nil {
 			return nil, nil, xerrors.Errorf("from env: %w", err)
 		}
-		opts.DCList = dcs.StagingDCs()
+		opts.DCList = dcs.Staging()
 
 		client := telegram.NewClient(telegram.TestAppID, telegram.TestAppHash, opts)
-		flow := telegram.TestAuth(rand.Reader, 2)
+		flow := auth.Test(rand.Reader, 2)
 		return client, flow, nil
 	}
 
@@ -41,5 +43,5 @@ func configure(test bool, opts telegram.Options) (*telegram.Client, telegram.Use
 	if err != nil {
 		return nil, nil, xerrors.Errorf("from env: %w", err)
 	}
-	return client, telegram.EnvAuth("", telegram.CodeAuthenticatorFunc(codeAsk)), nil
+	return client, auth.Env("", auth.CodeAuthenticatorFunc(codeAsk)), nil
 }

@@ -15,6 +15,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
 )
@@ -69,17 +70,20 @@ func run(ctx context.Context) (err error) {
 	client, flow, err := configure(test, telegram.Options{
 		Logger:        logger,
 		UpdateHandler: dispatcher,
+		Middlewares: []telegram.Middleware{
+			telegram.MiddlewareFunc(backoffRetry),
+		},
 	})
 	if err != nil {
 		return xerrors.Errorf("configure: %w", err)
 	}
 
-	raw := tg.NewClient(waitInvoker{client})
+	raw := tg.NewClient(client)
 	troll := NewTroll(trollDomain, stickerSet, raw).
 		WithLogger(logger.Named("troll"))
 	troll.Register(dispatcher)
 	return client.Run(ctx, func(ctx context.Context) error {
-		if err := client.AuthIfNecessary(ctx, telegram.NewAuth(flow, telegram.SendCodeOptions{})); err != nil {
+		if err := client.Auth().IfNecessary(ctx, auth.NewFlow(flow, auth.SendCodeOptions{})); err != nil {
 			return xerrors.Errorf("auth flow: %w", err)
 		}
 
