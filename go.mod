@@ -3,7 +3,7 @@ module github.com/tdakkota/trolljitrs
 go 1.16
 
 require (
-	github.com/cenkalti/backoff/v4 v4.1.0
+	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/gotd/td v0.40.0
 	github.com/joho/godotenv v1.3.0
 	go.uber.org/multierr v1.7.0
