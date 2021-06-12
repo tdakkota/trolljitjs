@@ -17,4 +17,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 )
 
-replace github.com/gotd/td v0.43.1 => github.com/tdakkota/td v0.7.2-0.20210612102946-0a72da6d2a30
+replace (
+	github.com/gotd/ige v0.2.0 => github.com/tdakkota/ige v0.1.4-0.20210609073156-29c48852d442
+	github.com/gotd/td v0.43.1 => github.com/tdakkota/td v0.7.2-0.20210612102946-0a72da6d2a30
+)
