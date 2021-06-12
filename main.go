@@ -8,82 +8,36 @@ import (
 	"os/signal"
 	"strconv"
 
-	"github.com/joho/godotenv"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/xerrors"
 
-	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
 )
 
-func getLogLevel(or zapcore.Level) (zapcore.Level, error) {
-	l, ok := os.LookupEnv("LOG_LEVEL")
-	if !ok {
-		return or, nil
-	}
-
-	var loglevel zapcore.Level
-	if err := loglevel.UnmarshalText([]byte(l)); err == nil {
-		return loglevel, nil
-	}
-
-	level, err := strconv.Atoi(l)
+func run(ctx context.Context) error {
+	cfg, err := loadConfig()
 	if err != nil {
-		return 0, err
+		return xerrors.Errorf("load config: %w", err)
 	}
 
-	return zapcore.Level(level), nil
-}
-
-func run(ctx context.Context) (err error) {
-	envErr := godotenv.Load()
-
-	level, err := getLogLevel(zapcore.DebugLevel)
+	logger, err := createLogger()
 	if err != nil {
-		return xerrors.Errorf("get log level: %w", err)
+		return xerrors.Errorf("create logger: %w", err)
 	}
-
-	cfg := zap.NewDevelopmentConfig()
-	cfg.OutputPaths = []string{
-		"trolljitrs.log",
-	}
-	logger, _ := cfg.Build(zap.IncreaseLevel(level))
 	defer func() {
-		multierr.AppendInto(&err, logger.Sync())
+		_ = logger.Sync()
 	}()
 
-	if envErr != nil {
-		logger.Info("Load environment file failed", zap.Error(envErr))
-	}
-
-	trollDomain := os.Getenv("TROLL")
-	if trollDomain == "" {
-		return xerrors.Errorf("empty TROLL env variable: %q", trollDomain)
-	}
-	stickerSet := os.Getenv("STICKER_SET")
-	if stickerSet == "" {
-		stickerSet = "wtfakkota"
-	}
-	_, test := os.LookupEnv("TEST")
-
 	dispatcher := tg.NewUpdateDispatcher()
-	client, flow, err := configure(test, telegram.Options{
-		Logger:        logger,
-		UpdateHandler: dispatcher,
-		Middlewares: []telegram.Middleware{
-			telegram.MiddlewareFunc(backoffRetry),
-		},
-	})
+	client, flow, err := configure(cfg, dispatcher, logger)
 	if err != nil {
 		return xerrors.Errorf("configure: %w", err)
 	}
 
 	raw := tg.NewClient(client)
-	troll := NewTroll(trollDomain, stickerSet, raw).
+	troll := NewTroll(cfg.Username, cfg.StickerSet, raw).
 		WithLogger(logger.Named("troll"))
 	troll.Register(dispatcher)
 	return client.Run(ctx, func(ctx context.Context) error {
@@ -91,7 +45,7 @@ func run(ctx context.Context) (err error) {
 			return xerrors.Errorf("auth flow: %w", err)
 		}
 
-		if test {
+		if cfg.Test {
 			username := "bot" + strconv.Itoa(rand.Intn(999999))
 			_, err := raw.AccountUpdateUsername(ctx, username)
 			if err != nil && !tgerr.Is(err, tg.ErrUsernameNotModified) {
@@ -101,7 +55,7 @@ func run(ctx context.Context) (err error) {
 			logger.Info("New username", zap.String("username", username))
 		}
 
-		return troll.Run(ctx)
+		return troll.Run(ctx, cfg.StatusLoop)
 	})
 }
 

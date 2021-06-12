@@ -147,7 +147,7 @@ func (t *Troll) statusLoop(ctx context.Context) error {
 	}
 }
 
-func (t *Troll) Run(ctx context.Context) error {
+func (t *Troll) Run(ctx context.Context, statusLoop bool) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
@@ -157,12 +157,14 @@ func (t *Troll) Run(ctx context.Context) error {
 		return nil
 	})
 
-	//g.Go(func() error {
-	//	if err := t.statusLoop(ctx); err != nil {
-	//		return xerrors.Errorf("status loop: %w", err)
-	//	}
-	//	return nil
-	//})
+	if statusLoop {
+		g.Go(func() error {
+			if err := t.statusLoop(ctx); err != nil {
+				return xerrors.Errorf("status loop: %w", err)
+			}
+			return nil
+		})
+	}
 
 	<-ctx.Done()
 	return g.Wait()

@@ -9,6 +9,10 @@
 # Env files
 *.env
 
+# Config
+trolljitrs.yaml
+trolljitrs.yml
+
 # Test binary, built with `go test -c`
 *.test
 

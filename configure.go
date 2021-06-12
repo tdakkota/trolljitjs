@@ -6,14 +6,17 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"golang.org/x/xerrors"
-
+	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
+	"go.uber.org/zap"
+	"golang.org/x/net/proxy"
+	"golang.org/x/xerrors"
 )
 
 func codeAsk(context.Context, *tg.AuthSentCode) (string, error) {
@@ -26,22 +29,38 @@ func codeAsk(context.Context, *tg.AuthSentCode) (string, error) {
 	return code, nil
 }
 
-func configure(test bool, opts telegram.Options) (*telegram.Client, auth.UserAuthenticator, error) {
-	if test {
-		opts, err := telegram.OptionsFromEnvironment(opts)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("from env: %w", err)
-		}
-		opts.DCList = dcs.Staging()
+func configure(
+	cfg Config,
+	dispatcher telegram.UpdateHandler,
+	logger *zap.Logger,
+) (*telegram.Client, auth.UserAuthenticator, error) {
+	dir, _ := filepath.Split(cfg.SessionFile)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return nil, nil, xerrors.Errorf("session dir creation: %w", err)
+	}
 
+	opts := telegram.Options{
+		DC: cfg.DC,
+		Resolver: dcs.Plain(dcs.PlainOptions{
+			Dial: proxy.Dial,
+		}),
+		SessionStorage: &session.FileStorage{
+			Path: cfg.SessionFile,
+		},
+		Logger:        logger,
+		UpdateHandler: dispatcher,
+		Middlewares: []telegram.Middleware{
+			telegram.MiddlewareFunc(backoffRetry),
+		},
+	}
+
+	if cfg.Test {
+		opts.DCList = dcs.Staging()
 		client := telegram.NewClient(telegram.TestAppID, telegram.TestAppHash, opts)
-		flow := auth.Test(rand.Reader, 2)
+		flow := auth.Test(rand.Reader, cfg.DC)
 		return client, flow, nil
 	}
 
-	client, err := telegram.ClientFromEnvironment(opts)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("from env: %w", err)
-	}
-	return client, auth.Env("", auth.CodeAuthenticatorFunc(codeAsk)), nil
+	client := telegram.NewClient(cfg.AppID, cfg.AppHash, opts)
+	return client, cfg.AsAuth(auth.CodeAuthenticatorFunc(codeAsk)), nil
 }
