@@ -35,8 +35,10 @@ func configure(
 	logger *zap.Logger,
 ) (*telegram.Client, auth.UserAuthenticator, error) {
 	dir, _ := filepath.Split(cfg.SessionFile)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return nil, nil, xerrors.Errorf("session dir creation: %w", err)
+	if dir != "" {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return nil, nil, xerrors.Errorf("session dir creation: %w", err)
+		}
 	}
 
 	opts := telegram.Options{
