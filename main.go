@@ -46,7 +46,7 @@ func run(ctx context.Context) error {
 		}
 
 		if cfg.Test {
-			username := "bot" + strconv.Itoa(rand.Intn(999999))
+			username := "bot" + strconv.Itoa(rand.Intn(999999)) // #nosec G404
 			_, err := raw.AccountUpdateUsername(ctx, username)
 			if err != nil && !tgerr.Is(err, tg.ErrUsernameNotModified) {
 				return xerrors.Errorf("update username: %w", err)

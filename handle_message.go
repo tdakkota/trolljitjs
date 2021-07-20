@@ -10,7 +10,7 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-func (t *Troll) OnNewMessage(ctx context.Context, e tg.Entities, update *tg.UpdateNewMessage) error {
+func (t *Troll) OnNewMessage(ctx context.Context, _ tg.Entities, update *tg.UpdateNewMessage) error {
 	msg, ok := update.Message.(*tg.Message)
 	if !ok || msg.Out {
 		return nil
@@ -31,6 +31,7 @@ func (t *Troll) OnNewMessage(ctx context.Context, e tg.Entities, update *tg.Upda
 		zap.Time("date", time.Unix(int64(msg.Date), 0)),
 	)
 
+	// #nosec G404
 	if sticker, ok := t.checkSticker(); ok && rand.Int()%2 == 0 {
 		return t.ignored(ctx, resolved, msg.ID, sticker)
 	}
