@@ -7,8 +7,8 @@ github.com/cenkalti/backoff/v4 v4.1.0/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInq
 github.com/cenkalti/backoff/v4 v4.1.1 h1:G2HAfAmvm/GcKan2oOQpBXOd2tT2G57ZnZGWa1PxPBQ=
 github.com/cenkalti/backoff/v4 v4.1.1/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
 github.com/cristalhq/aconfig v0.16.1/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCSvEhMTm/H3E=
-github.com/cristalhq/aconfig v0.16.2 h1:cN+y3rtHyK9ar7NRiY4E+USs07P2qnZnGeZfNzXoV2g=
-github.com/cristalhq/aconfig v0.16.2/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCSvEhMTm/H3E=
+github.com/cristalhq/aconfig v0.16.5 h1:CM/Ifw+5irFvQGPeAjhKOmRp/ltXpZAhD0GD/PBHzzk=
+github.com/cristalhq/aconfig v0.16.5/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCSvEhMTm/H3E=
 github.com/cristalhq/aconfig/aconfigdotenv v0.16.1 h1:nsybrhIghZ2y0hQAijDlqih7KYgs03UujQ+GcyButLc=
 github.com/cristalhq/aconfig/aconfigdotenv v0.16.1/go.mod h1:VQMzt9eS0Zlxwsuf/zkJuk1oZLm72cjpAkEkMrpbOm0=
 github.com/cristalhq/aconfig/aconfigyaml v0.16.1 h1:ghmzWFolCuja6BzBvHkNAn2Qsewu6xqdAXQyWnXjvZw=
