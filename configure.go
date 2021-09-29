@@ -9,14 +9,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.uber.org/zap"
+	"golang.org/x/net/proxy"
+	"golang.org/x/xerrors"
+
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
-	"go.uber.org/zap"
-	"golang.org/x/net/proxy"
-	"golang.org/x/xerrors"
 )
 
 func codeAsk(context.Context, *tg.AuthSentCode) (string, error) {
@@ -57,7 +58,7 @@ func configure(
 	}
 
 	if cfg.Test {
-		opts.DCList = dcs.Staging()
+		opts.DCList = dcs.Test()
 		client := telegram.NewClient(telegram.TestAppID, telegram.TestAppHash, opts)
 		flow := auth.Test(rand.Reader, cfg.DC)
 		return client, flow, nil

@@ -5,11 +5,11 @@ import (
 
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
-	"golang.org/x/xerrors"
 
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigdotenv"
 	"github.com/cristalhq/aconfig/aconfigyaml"
+	"golang.org/x/xerrors"
 )
 
 type Config struct {

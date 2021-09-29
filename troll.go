@@ -47,7 +47,7 @@ func (t *Troll) WithLogger(logger *zap.Logger) *Troll {
 	return t
 }
 
-func (t *Troll) checkUserID(id int) (tg.InputPeerUser, bool) {
+func (t *Troll) checkUserID(id int64) (tg.InputPeerUser, bool) {
 	t.resolvedMux.RLock()
 	if t.resolved == nil {
 		t.resolvedMux.RUnlock()
