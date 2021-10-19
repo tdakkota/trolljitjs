@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1
-	github.com/cristalhq/aconfig v0.16.6
+	github.com/cristalhq/aconfig v0.16.7
 	github.com/cristalhq/aconfig/aconfigdotenv v0.16.1
 	github.com/cristalhq/aconfig/aconfigyaml v0.16.1
 	github.com/gotd/td v0.51.1
