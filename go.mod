@@ -8,7 +8,7 @@ require (
 	github.com/cristalhq/aconfig/aconfigdotenv v0.16.1
 	github.com/cristalhq/aconfig/aconfigyaml v0.16.1
 	github.com/gotd/td v0.52.0
-	github.com/k0kubun/pp/v3 v3.0.7
+	github.com/k0kubun/pp/v3 v3.0.10
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
