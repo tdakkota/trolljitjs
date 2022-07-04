@@ -4,9 +4,9 @@ go 1.16
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/cristalhq/aconfig v0.16.8
+	github.com/cristalhq/aconfig v0.17.0
 	github.com/cristalhq/aconfig/aconfigdotenv v0.16.1
-	github.com/cristalhq/aconfig/aconfigyaml v0.16.1
+	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
 	github.com/gotd/td v0.52.0
 	github.com/k0kubun/pp/v3 v3.1.0
 	go.uber.org/multierr v1.8.0
